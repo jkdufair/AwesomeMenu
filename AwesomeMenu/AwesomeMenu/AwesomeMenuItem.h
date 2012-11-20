@@ -28,7 +28,7 @@
 @property (nonatomic) CGPoint nearPoint;
 @property (nonatomic) CGPoint farPoint;
 
-@property (nonatomic, assign) id<AwesomeMenuItemDelegate> delegate;
+@property (nonatomic, retain) id<AwesomeMenuItemDelegate> delegate;
 
 - (id)initWithImage:(UIImage *)img 
    highlightedImage:(UIImage *)himg
