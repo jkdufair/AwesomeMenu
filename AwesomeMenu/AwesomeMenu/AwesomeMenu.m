@@ -66,8 +66,9 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
         // add the "Add" Button.
         _addButton = [[AwesomeMenuItem alloc] initWithImage:[UIImage imageNamed:@"bg-addbutton.png"]
                                        highlightedImage:[UIImage imageNamed:@"bg-addbutton-highlighted.png"] 
-                                           ContentImage:[UIImage imageNamed:@"icon-plus.png"] 
-                                highlightedContentImage:[UIImage imageNamed:@"icon-plus-highlighted.png"]];
+                                               contentImage: [UIImage imageNamed:@"icon-plus.png"]
+                                highlightedContentImage:[UIImage imageNamed:@"icon-plus-highlighted.png"]
+                                                  label:nil];
         _addButton.delegate = self;
         _addButton.center = self.startPoint;
         [self addSubview:_addButton];
@@ -162,6 +163,14 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
     }
     // blowup the selected menu button
     CAAnimationGroup *blowup = [self _blowupAnimationAtPoint:item.center];
+    animationCompletionBlock block1 = ^void(void)
+    {
+        self.backgroundColor = [UIColor clearColor];
+        item.labelView.alpha = 0.0;
+        item.alpha = 0.0;
+    };
+    [blowup setValue:block1 forKey:@"animationComplete"];
+    blowup.delegate = self;
     [item.layer addAnimation:blowup forKey:@"blowup"];
     item.center = item.startPoint;
     
@@ -173,6 +182,14 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
         if (otherItem.tag == item.tag) {
             continue;
         }
+        animationCompletionBlock block2 = ^void(void)
+        {
+            self.backgroundColor = [UIColor clearColor];
+            otherItem.labelView.alpha = 0.0;
+            otherItem.alpha = 0.0;
+        };
+        [shrink setValue:block2 forKey:@"animationComplete"];
+        shrink.delegate = self;
         [otherItem.layer addAnimation:shrink forKey:@"shrink"];
 
         otherItem.center = otherItem.startPoint;
@@ -180,10 +197,10 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
     _expanding = NO;
     
     // rotate "add" button
-    float angle = self.isExpanding ? -M_PI_4 : 0.0f;
-    [UIView animateWithDuration:0.2f animations:^{
-        _addButton.transform = CGAffineTransformMakeRotation(angle);
-    }];
+//    float angle = self.isExpanding ? -M_PI_4 : 0.0f;
+//    [UIView animateWithDuration:0.2f animations:^{
+//        _addButton.transform = CGAffineTransformMakeRotation(angle);
+//    }];
     
     if ([_delegate respondsToSelector:@selector(AwesomeMenu:didSelectIndex:)])
     {
@@ -245,10 +262,10 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
     _expanding = expanding;    
     
     // rotate add button
-    float angle = self.isExpanding ? -M_PI_4 : 0.0f;
-    [UIView animateWithDuration:0.2f animations:^{
-        _addButton.transform = CGAffineTransformMakeRotation(angle);
-    }];
+//    float angle = self.isExpanding ? -M_PI_4 : 0.0f;
+//    [UIView animateWithDuration:0.2f animations:^{
+//        _addButton.transform = CGAffineTransformMakeRotation(angle);
+//    }];
     
     // expand or close animation
     if (!_timer) 
@@ -262,7 +279,11 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
         _isAnimating = YES;
     }
 }
+
+
 #pragma mark - private methods
+typedef void (^animationCompletionBlock)(void);
+
 - (void)_expand
 {
 	
@@ -276,6 +297,10 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
     
     int tag = 1000 + _flag;
     AwesomeMenuItem *item = (AwesomeMenuItem *)[self viewWithTag:tag];
+    [UIView animateWithDuration:0.2 animations:^{
+        self.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.7];
+        item.alpha = 1.0;
+    }];
     
     CAKeyframeAnimation *rotateAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation.z"];
     rotateAnimation.values = [NSArray arrayWithObjects:[NSNumber numberWithFloat:expandRotation],[NSNumber numberWithFloat:0.0f], nil];
@@ -299,11 +324,28 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
     animationgroup.duration = 0.5f;
     animationgroup.fillMode = kCAFillModeForwards;
     animationgroup.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+    animationgroup.delegate = self;
+    animationCompletionBlock theBlock = ^void(void)
+    {
+        [UIView animateWithDuration:0.2 animations:^{
+            item.labelView.alpha = 1.0;
+        }];
+
+    };
+    [animationgroup setValue:theBlock forKey:@"animationComplete"];
     [item.layer addAnimation:animationgroup forKey:@"Expand"];
+    
     item.center = item.endPoint;
     
     _flag ++;
     
+}
+
+- (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag
+{
+        animationCompletionBlock theBlock = [anim valueForKey:@"animationComplete"];
+        if (theBlock)
+            theBlock();
 }
 
 - (void)_close
@@ -318,6 +360,7 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
     
     int tag = 1000 + _flag;
      AwesomeMenuItem *item = (AwesomeMenuItem *)[self viewWithTag:tag];
+    item.labelView.alpha = 0.0;
     
     CAKeyframeAnimation *rotateAnimation = [CAKeyframeAnimation animationWithKeyPath:@"transform.rotation.z"];
     rotateAnimation.values = [NSArray arrayWithObjects:[NSNumber numberWithFloat:0.0f],[NSNumber numberWithFloat:closeRotation],[NSNumber numberWithFloat:0.0f], nil];
@@ -341,6 +384,17 @@ static CGPoint RotateCGPointAroundCenter(CGPoint point, CGPoint center, float an
     animationgroup.duration = 0.5f;
     animationgroup.fillMode = kCAFillModeForwards;
     animationgroup.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseIn];
+    animationgroup.delegate = self;
+    animationCompletionBlock theBlock = ^void(void)
+    {
+        item.alpha = 0.0;
+        [UIView animateWithDuration:0.2 animations:^{
+            self.backgroundColor = [UIColor clearColor];
+            item.labelView.alpha = 0.0;
+        }];
+        
+    };
+    [animationgroup setValue:theBlock forKey:@"animationComplete"];
     [item.layer addAnimation:animationgroup forKey:@"Close"];
     item.center = item.startPoint;
     _flag --;

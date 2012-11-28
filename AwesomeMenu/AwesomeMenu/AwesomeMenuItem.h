@@ -13,6 +13,7 @@
 @interface AwesomeMenuItem : UIImageView
 {
     UIImageView *_contentImageView;
+    NSString *label;
     CGPoint _startPoint;
     CGPoint _endPoint;
     CGPoint _nearPoint; // near
@@ -22,6 +23,7 @@
 }
 
 @property (nonatomic, retain, readonly) UIImageView *contentImageView;
+@property (nonatomic, retain) UILabel *labelView;
 
 @property (nonatomic) CGPoint startPoint;
 @property (nonatomic) CGPoint endPoint;
@@ -32,7 +34,13 @@
 
 - (id)initWithImage:(UIImage *)img 
    highlightedImage:(UIImage *)himg
-       ContentImage:(UIImage *)cimg
+       contentImage:(UIImage *)cimg
+highlightedContentImage:(UIImage *)hcimg
+label: (NSString *)lbl;
+
+- (id)initWithImage:(UIImage *)img
+   highlightedImage:(UIImage *)himg
+       contentImage:(UIImage *)cimg
 highlightedContentImage:(UIImage *)hcimg;
 
 
